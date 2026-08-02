@@ -1,0 +1,70 @@
+{
+  "section": "Engines",
+  "level_number": 4,
+  "is_boss_level": false,
+  "arena_type": "shared_zone",
+  "paddle_lanes": {
+    "p1": {
+      "lanes": [
+        "bottom"
+      ],
+      "tubes": false
+    },
+    "p2": {
+      "lanes": [
+        "bottom"
+      ],
+      "tubes": false
+    }
+  },
+  "player_count_scaling": {
+    "1": {
+      "max_balls": 1
+    },
+    "2": {
+      "max_balls": 2
+    }
+  },
+  "legend": {
+    ".": null,
+    "S": "brick_std",
+    "A": "brick_arm_3hit",
+    "P": "brick_push",
+    "E": "brick_explosive_std",
+    "L": "brick_std_cL",
+    "M": "brick_arm_cM",
+    "W": "brick_wall"
+  },
+  "rows": [
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "SSSSSSLSSSSSSSSSSSSSSSSSSSSLSSSSSS",
+    "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+    "S.S.S.S.S.S.S.S.S.S.S.S.S.S.S.S.S.",
+    "SSSSESSSSSSSESSSSMSSESSSSSSSESSSSS",
+    "SSSSESSSSSSSESSSSSSSESSSSSSSESSSSS",
+    "SSSPSSSSSPSSSSSPSSSSSPSSSSSPSSSSSP",
+    "SSSPSSSSSPSSSSSPSSSSSPSSSSSPSSSSSP",
+    "WSS.SS.SSWWS.SS.SS.WW.SS.SS.SWWSS.",
+    "WSS.SS.SSWWS.SS.SS.WW.SS.SS.SWWSS.",
+    "S.S.S.S.S.S.S.S.S.S.S.S.S.S.S.S.S.",
+    "S.S.S.S.S.S.S.S.S.S.S.S.S.S.S.S.S.",
+    "S...S...S...S...S...S...S...S...S.",
+    "S...S...S...S...S...S...S...S...S."
+  ],
+  "enemy_types": {
+    "th13f": {
+      "type": "ball_grabber",
+      "hp": 1,
+      "destructible": true
+    }
+  },
+  "enemy_spawns": [
+    {
+      "enemy_type": "th13f",
+      "spawn_x": 300,
+      "spawn_y": 0,
+      "trigger": "time:5s"
+    }
+  ],
+  "boss_id": null
+}

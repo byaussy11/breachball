@@ -1,0 +1,13 @@
+{
+  "brick_std": { "type": "standard", "hp": 1, "color": "#5DAA6E" },
+  "brick_arm_3hit": { "type": "armored", "hp": 3, "color": "#8899AA" },
+  "brick_regen_std": { "type": "regenerating", "hp": 1, "regen_seconds": 4, "color": "#5DAA6E" },
+  "brick_explosive_std": { "type": "explosive", "hp": 1, "chain_radius": 1, "color": "#C1440E" },
+  "brick_fuse_5s": { "type": "timed_fuse", "hp": 1, "fuse_seconds": 5, "color": "#C1440E" },
+  "brick_moving_std": { "type": "moving", "hp": 1, "patrol_path": "horizontal_2", "color": "#5DAA6E" },
+  "brick_wall": { "type": "indestructible", "color": "#444444" },
+  "brick_locked_p1": { "type": "color_locked", "hp": 1, "color_lock_owner": "p1", "color": "silver" },
+  "brick_push": { "type": "pushable", "color": "#5DAA6E" },
+  "brick_std_cL": { "type": "standard", "hp": 1, "color": "#5DAA6E", "capsule_skill_id": "laser" },
+  "brick_arm_cM": { "type": "armored", "hp": 3, "color": "#8899AA", "capsule_skill_id": "ball_magnet" }
+}
