@@ -15,11 +15,12 @@ def _resolve_color(value):
 
 
 class BrickCell:
-    __slots__ = ("brick_id", "hp", "color")
+    __slots__ = ("brick_id", "hp", "max_hp", "color")
 
     def __init__(self, brick_id: str, hp, color):
         self.brick_id = brick_id
         self.hp = hp  # None = indestructible, never removed
+        self.max_hp = hp  # starting hp, kept to size the damage notch as hp drops
         self.color = color
 
 
@@ -148,4 +149,22 @@ class BrickField:
         for row_idx, row in enumerate(self.cells):
             for col_idx, cell in enumerate(row):
                 if cell is not None:
-                    pygame.draw.rect(surface, cell.color, self.rect_for(row_idx, col_idx))
+                    rect = self.rect_for(row_idx, col_idx)
+                    pygame.draw.rect(surface, cell.color, rect)
+                    self._draw_damage_notch(surface, cell, rect)
+
+    def _draw_damage_notch(self, surface: pygame.Surface, cell, rect: pygame.Rect):
+        """Armored bricks (max_hp > 1) show damage as a notch eaten inward
+        from the left and right edges along the brick's middle row, 1px per
+        hit taken, punched through to the background color."""
+        if cell.max_hp is None or cell.max_hp <= 1:
+            return
+        hits_taken = cell.max_hp - cell.hp
+        if hits_taken <= 0:
+            return
+        notch_width = min(hits_taken, rect.width // 2)
+        mid_y = rect.top + rect.height // 2
+        left_notch = pygame.Rect(rect.left, mid_y, notch_width, 1)
+        right_notch = pygame.Rect(rect.right - notch_width, mid_y, notch_width, 1)
+        pygame.draw.rect(surface, constants.BACKGROUND_COLOR, left_notch)
+        pygame.draw.rect(surface, constants.BACKGROUND_COLOR, right_notch)

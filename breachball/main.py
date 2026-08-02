@@ -15,7 +15,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 # Flip on once running on the actual cabinet with spinners attached; leave
 # off for keyboard playtesting on a regular machine.
-USE_MOUSE_SPINNERS = True
+USE_MOUSE_SPINNERS = False
 
 
 def main():
