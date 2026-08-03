@@ -13,9 +13,12 @@ from .paddle import Paddle
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
-# Flip on once running on the actual cabinet with spinners attached; leave
-# off for keyboard playtesting on a regular machine.
-USE_MOUSE_SPINNERS = False
+try:
+    from .local_config import USE_MOUSE_SPINNERS
+except ImportError:
+    # No local_config.py yet — copy local_config.example.py to local_config.py
+    # and edit it there. Defaulting to keyboard-only until then.
+    USE_MOUSE_SPINNERS = False
 
 
 def main():
