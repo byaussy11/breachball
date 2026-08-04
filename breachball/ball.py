@@ -35,8 +35,40 @@ class Ball:
         self.owner = owner
         self.piercing = piercing
         self.speed_multiplier = speed_multiplier
+        # Non-None while the ball is parked on a paddle awaiting launch (game
+        # start, or re-serve after a life is lost) — physics are suspended
+        # and the ball just tracks the paddle until launch() is called.
+        self.attached_paddle = None
 
-    def update(self, paddles=(), brick_field=None):
+    def attach_to_paddle(self, paddle):
+        """Parks the ball against `paddle`, following its position each
+        frame until launch() releases it."""
+        self.attached_paddle = paddle
+        self.vx = 0.0
+        self.vy = 0.0
+        self.color_state = "neutral"
+        self.owner = None
+        self._snap_to_paddle(paddle)
+
+    def launch(self, vx: float, vy: float):
+        """Releases the ball from its paddle with the given velocity."""
+        self.attached_paddle = None
+        self.vx = vx
+        self.vy = vy
+
+    def _snap_to_paddle(self, paddle):
+        rect = paddle.rect
+        r = constants.BALL_RADIUS
+        self.x = rect.centerx
+        self.y = rect.bottom + r if paddle.lane == Lane.TOP else rect.top - r
+
+    def update(self, paddles=(), brick_field=None) -> bool:
+        """Advances the ball one frame. Returns True if the ball was lost
+        past the bottom paddle (shared-zone rule) this frame."""
+        if self.attached_paddle is not None:
+            self._snap_to_paddle(self.attached_paddle)
+            return False
+
         prev_x, prev_y = self.x, self.y
         self.x += self.vx * self.speed_multiplier
         self.y += self.vy * self.speed_multiplier
@@ -49,7 +81,11 @@ class Ball:
         if not hit_paddle and brick_field is not None:
             brick_field.resolve_ball_collision(self, prev_x, prev_y)
 
+        if self.y + constants.BALL_RADIUS > constants.VIRTUAL_HEIGHT:
+            return True
+
         self._bounce_off_walls()
+        return False
 
     def _bounce_off_paddle(self, paddle) -> bool:
         rect = paddle.rect
@@ -95,11 +131,9 @@ class Ball:
         if self.y - r < 0:
             self.y = r
             self.vy = abs(self.vy)
-        elif self.y + r > constants.VIRTUAL_HEIGHT:
-            # Placeholder bounce — once paddle collision and the shared-lives
-            # "ball lost" rule exist, missing the bottom paddle replaces this.
-            self.y = constants.VIRTUAL_HEIGHT - r
-            self.vy = -abs(self.vy)
+        # Bottom edge (y + r > VIRTUAL_HEIGHT) is handled in update() as a
+        # lost-ball event instead of a bounce — shared-zone rule, since the
+        # top paddle/wall is an obstacle, not a second death line.
 
     def draw(self, surface: pygame.Surface):
         color = constants.BALL_COLORS.get(self.color_state, constants.BALL_COLORS["neutral"])

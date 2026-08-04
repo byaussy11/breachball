@@ -33,6 +33,18 @@ BACKGROUND_COLOR = (10, 10, 20)
 
 BALL_RADIUS = 4
 
+# Shared pool per the brief — not per-player, since individual lives would
+# create awkward questions for cooperative mechanics if one paddle ran out
+# while the other kept playing.
+STARTING_LIVES = 3
+
+# Speed applied when the ball launches off the serving paddle, whether at
+# the start of a life or after a re-serve. Magnitudes only — the caller
+# applies sign to vy based on which lane the serving paddle is in (up from a
+# bottom-lane paddle, down from a top-lane one).
+BALL_LAUNCH_VX = 3.0
+BALL_LAUNCH_VY = 3.2
+
 # Mirrors the ball's color_state field from the data schema. p1_owned/
 # p2_owned match the paddle colors they correspond to (silver/onyx black).
 BALL_COLORS = {

@@ -133,7 +133,77 @@ A multi-phase fight that cycles through most of the game's core systems in one e
 
 ---
 
-## Next Steps
+## Version Roadmap
+
+**Current state (v0.1.0–v0.1.2):** Initial scaffolding is complete. Two paddles exist and can be
+positioned top, bottom, or side; ball movement and collision detection (paddles, walls, bricks)
+are working; bricks break on hit; several special brick types are already implemented. Not yet
+implemented: real win/lose detection (all four screen edges currently act as generic walls,
+rather than the actual shared-zone/split-zone rules). v0.1.2 added a local, non-committed config
+file.
+
+**Audio manager (foundational, build alongside 0.2.0):** A minimal wrapper for playing SFX/music
+(`play_sound("brick_break")`, `play_music("section_theme")`) — belongs with the other shared
+plumbing (`controls.py`, resolution scaling) rather than being bolted on later. Building this once,
+early, means every milestone after just adds a sound file and a call into it.
+
+**0.2.0 — Playable Core Loop:** Replace the placeholder "all four sides are walls" behavior with
+real win/lose rules — shared-zone default (lose only past the bottom paddle) and split-zone
+variant (lose past either paddle) — plus a shared lives pool and game over, the win condition
+(all breakable bricks cleared), and ball ownership colors (neutral/P1/P2/hazard) with actual
+enforcement of who can hit which ball. This is the milestone where the game becomes genuinely
+loseable/winnable for the first time, rather than just running. Audio opportunity: the
+most-heard SFX in the game — ball bounce (paddle/wall/brick), brick break, life lost, game
+over/win stings.
+
+**0.3.0 — First Pixel-Art Pass (Paddles):** Swap the placeholder paddle rectangles for the sprites
+already prototyped earlier in design (base paddle plus the laser turret attachment), palette-swapped
+to the official colors — silver for Player 1, onyx black for Player 2. Low-risk, high-payoff step
+since the groundwork already exists; no reason to wait for the rest of the art to do this one.
+
+**0.4.0 — Paddle Skills & Capsule System:** Capsule drop/catch mechanics, the tiered skills (Grow
+3 tiers, Laser 3 tiers, Ball Magnet 3 tiers, Sticky 3 tiers including the trajectory-preview and
+bounce-preview levels), skill loss on paddle death, the innate slam attack, and the ball
+duplication cooperative mechanic (60% alignment channel, 5 seconds, resets on damage). Art
+opportunity: capsule sprites and laser projectile art, building on the turret sprite groundwork
+from 0.3.0. Audio opportunity: capsule catch, skill activation per type (laser fire, magnet hum,
+sticky catch/release), ball duplication charge/complete.
+
+**0.5.0 — Enemies:** Ball-grabber, lightning jellyfish (wired-drone visual concept), and shielded
+deflector (both destructible and indestructible variants), plus the spawn system. Extends the win
+condition to also require clearing enemies, not just bricks. Art opportunity: sprite each enemy as
+it's implemented rather than batching all enemy art at the end. Audio opportunity: SFX per enemy
+(grab, zap/stun, deflector clank), enemy defeat sound.
+
+**0.6.0 — Level Data Pipeline & Level Editor:** Full brick-type catalog and `brick_grid` JSON
+loading (finishing out the remaining v1 brick types — regenerating, timed-fuse, moving, pushable,
+color-locked — alongside what's already implemented), plus a first-pass paint-mode level editor
+built as a dev-mode toggle inside the game itself, reusing the same grid-rendering pipeline. Art
+opportunity: brick sprites per type, a natural moment to tackle since building/using the editor
+means spending a lot of time looking at the grid.
+
+**0.7.0 — Arena Variants & Transfer Tubes:** Split-zone and L-shaped arena variants, corner
+transfer tubes, the per-level `paddle_lanes` configuration and validation rules, the lane-based
+clockwise spinner-direction mapping, and paddle travel-range variants (full-width default vs.
+narrower level-design option). Art opportunity: tube visuals, arena wall/frame dressing. Audio
+opportunity: tube whoosh/transition sound.
+
+**0.8.0 — Solo Mode & Input Polish:** The switch/toggle single-spinner control scheme for 1-player
+mode, and difficulty scaling by player count (e.g. reduced ball/enemy counts for solo).
+
+**0.9.0 — First Boss, Attract Mode & First Full Section:** Boss Concept #1 (breakdown phase,
+weak-point phase, malfunction trigger, absorb-and-reflect payoff), boss-specific enemies, the
+attract-mode/coin-op shell (insert coin, press start, demo loop, credits), and a complete first
+Section (9 regular levels + boss on the 10th) playable end-to-end. Art opportunity: the boss
+sprite and attract-mode screens — saved for last since the boss design was the most recently
+finalized of the major systems. Audio opportunity: this is where music really lands — attract-mode
+theme, boss music, and optionally a Section theme, since it's the first point with a complete,
+playable loop worth scoring. Also boss-specific SFX (malfunction stutter/spark, absorb/reflect).
+
+**1.0.0 — First playable release:** One full Section playable end-to-end in both 1-player and
+2-player modes, stable, with attract mode and coin-op conventions fully in place.
+
+
 Skill delivery is now settled (capsule-catch). Good next targets: the boss roster (question #6), win-condition specifics (#4), or filling out more of the paddle skill list.
 
 ## Engine Scope (for implementation phase)
