@@ -1,9 +1,11 @@
+import argparse
 import sys
 from pathlib import Path
 
 import pygame
 
 from . import constants
+from .audio import AudioManager
 from .ball import Ball
 from .bricks import BrickField
 from .controls import Controls, Lane
@@ -22,12 +24,21 @@ except ImportError:
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--level",
+        default="demo_level.json",
+        help="Level JSON filename under data/levels/ (default: demo_level.json)",
+    )
+    args = parser.parse_args()
+
     pygame.init()
     display = Display(caption="Breach Ball")
     controls = Controls(use_mouse_spinners=USE_MOUSE_SPINNERS)
+    audio = AudioManager()
 
     catalog = BrickCatalog.load(DATA_DIR / "bricks_catalog.json")
-    level = Level.load(DATA_DIR / "levels" / "demo_level.json")
+    level = Level.load(DATA_DIR / "levels" / args.level)
     brick_field = BrickField(level, catalog)
 
     clock = pygame.time.Clock()
@@ -44,7 +55,9 @@ def main():
 
     font = pygame.font.SysFont(None, 24)
     lives = constants.STARTING_LIVES
-    game_over = False
+    # "playing" | "won" | "lost" — once not "playing", paddle/ball updates
+    # stop and the matching end-of-round message is shown instead.
+    game_state = "playing"
 
     running = True
     while running:
@@ -54,7 +67,7 @@ def main():
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                if not game_over and ball.attached_paddle is not None:
+                if game_state == "playing" and ball.attached_paddle is not None:
                     # Bottom-lane paddle launches the ball up into the field;
                     # a top-lane paddle would launch it down (mirrors the
                     # sign convention in Ball._bounce_off_paddle).
@@ -69,17 +82,22 @@ def main():
 
         controls.update()
 
-        if not game_over:
+        if game_state == "playing":
             p1.move(controls.get_lane_movement(1, p1.lane))
             p2.move(controls.get_lane_movement(2, p2.lane))
 
-            ball_lost = ball.update(paddles=(p1, p2), brick_field=brick_field)
+            ball_lost = ball.update(paddles=(p1, p2), brick_field=brick_field, audio=audio)
             if ball_lost:
                 lives -= 1
+                audio.play_sound("life_lost")
                 if lives <= 0:
-                    game_over = True
+                    game_state = "lost"
+                    audio.play_sound("game_over")
                 else:
                     ball.attach_to_paddle(serve_paddle)
+            elif brick_field.is_cleared():
+                game_state = "won"
+                audio.play_sound("win")
 
         surface = display.begin_frame()
         brick_field.draw(surface)
@@ -89,12 +107,17 @@ def main():
 
         lives_surface = font.render(f"Lives: {lives}", True, (240, 240, 240))
         surface.blit(lives_surface, (8, 8))
-        if game_over:
-            over_surface = font.render("GAME OVER", True, (200, 40, 40))
-            rect = over_surface.get_rect(
+        if game_state != "playing":
+            message, color = (
+                ("YOU WIN", (80, 220, 100))
+                if game_state == "won"
+                else ("GAME OVER", (200, 40, 40))
+            )
+            end_surface = font.render(message, True, color)
+            rect = end_surface.get_rect(
                 center=(constants.VIRTUAL_WIDTH / 2, constants.VIRTUAL_HEIGHT / 2)
             )
-            surface.blit(over_surface, rect)
+            surface.blit(end_surface, rect)
 
         display.present()
         clock.tick(60)

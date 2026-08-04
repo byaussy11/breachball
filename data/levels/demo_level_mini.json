@@ -1,0 +1,30 @@
+{
+  "section": "Engines",
+  "level_number": 0,
+  "is_boss_level": false,
+  "arena_type": "shared_zone",
+  "paddle_lanes": {
+    "p1": {
+      "lanes": [
+        "bottom"
+      ],
+      "tubes": false
+    },
+    "p2": {
+      "lanes": [
+        "bottom"
+      ],
+      "tubes": false
+    }
+  },
+  "legend": {
+    ".": null,
+    "S": "brick_std"
+  },
+  "rows": [
+    "...S..."
+  ],
+  "enemy_types": {},
+  "enemy_spawns": [],
+  "boss_id": null
+}

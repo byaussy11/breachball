@@ -62,7 +62,7 @@ class Ball:
         self.x = rect.centerx
         self.y = rect.bottom + r if paddle.lane == Lane.TOP else rect.top - r
 
-    def update(self, paddles=(), brick_field=None) -> bool:
+    def update(self, paddles=(), brick_field=None, audio=None) -> bool:
         """Advances the ball one frame. Returns True if the ball was lost
         past the bottom paddle (shared-zone rule) this frame."""
         if self.attached_paddle is not None:
@@ -77,14 +77,16 @@ class Ball:
         for paddle in paddles:
             if self._bounce_off_paddle(paddle):
                 hit_paddle = True
+                if audio:
+                    audio.play_sound("paddle_bounce")
                 break  # resolve at most one collision per frame
         if not hit_paddle and brick_field is not None:
-            brick_field.resolve_ball_collision(self, prev_x, prev_y)
+            brick_field.resolve_ball_collision(self, prev_x, prev_y, audio=audio)
 
         if self.y + constants.BALL_RADIUS > constants.VIRTUAL_HEIGHT:
             return True
 
-        self._bounce_off_walls()
+        self._bounce_off_walls(audio=audio)
         return False
 
     def _bounce_off_paddle(self, paddle) -> bool:
@@ -119,21 +121,28 @@ class Ball:
 
         return True
 
-    def _bounce_off_walls(self):
+    def _bounce_off_walls(self, audio=None):
         r = constants.BALL_RADIUS
+        bounced = False
         if self.x - r < 0:
             self.x = r
             self.vx = abs(self.vx)
+            bounced = True
         elif self.x + r > constants.VIRTUAL_WIDTH:
             self.x = constants.VIRTUAL_WIDTH - r
             self.vx = -abs(self.vx)
+            bounced = True
 
         if self.y - r < 0:
             self.y = r
             self.vy = abs(self.vy)
+            bounced = True
         # Bottom edge (y + r > VIRTUAL_HEIGHT) is handled in update() as a
         # lost-ball event instead of a bounce — shared-zone rule, since the
         # top paddle/wall is an obstacle, not a second death line.
+
+        if bounced and audio:
+            audio.play_sound("wall_bounce")
 
     def draw(self, surface: pygame.Surface):
         color = constants.BALL_COLORS.get(self.color_state, constants.BALL_COLORS["neutral"])

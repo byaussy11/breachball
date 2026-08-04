@@ -75,7 +75,7 @@ class BrickField:
                     return row_idx, col_idx, rect
         return None
 
-    def resolve_ball_collision(self, ball, prev_x: float, prev_y: float) -> bool:
+    def resolve_ball_collision(self, ball, prev_x: float, prev_y: float, audio=None) -> bool:
         """Checks the ball against every live cell and resolves every
         overlap found this frame, not just the first — bricks sit only
         BRICK_GAP apart while the ball is several pixels wide, so it's
@@ -136,14 +136,29 @@ class BrickField:
                     flipped_y = True
                 ball.y = rect.top - r if (came_from_above or ball.y < rect.centery) else rect.bottom + r
 
+            if audio:
+                audio.play_sound("brick_hit")
+
             if cell.hp is not None:
                 cell.hp -= 1
                 if cell.hp <= 0:
                     self.cells[row_idx][col_idx] = None
+                    if audio:
+                        audio.play_sound("brick_break")
 
             hit_any = True
 
         return hit_any
+
+    def is_cleared(self) -> bool:
+        """True once every breakable brick is gone. Indestructible cells
+        (hp is None) never leave the grid, so they're excluded — matches the
+        brief's win condition, which only counts breakable bricks."""
+        return not any(
+            cell is not None and cell.hp is not None
+            for row in self.cells
+            for cell in row
+        )
 
     def draw(self, surface: pygame.Surface):
         for row_idx, row in enumerate(self.cells):
