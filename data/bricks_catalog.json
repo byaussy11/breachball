@@ -9,5 +9,7 @@
   "brick_locked_p1": { "type": "color_locked", "hp": 1, "color_lock_owner": "p1", "color": "silver" },
   "brick_push": { "type": "pushable", "color": "#5DAA6E" },
   "brick_std_cL": { "type": "standard", "hp": 1, "color": "#5DAA6E", "capsule_skill_id": "laser" },
-  "brick_arm_cM": { "type": "armored", "hp": 3, "color": "#8899AA", "capsule_skill_id": "ball_magnet" }
+  "brick_arm_cM": { "type": "armored", "hp": 3, "color": "#8899AA", "capsule_skill_id": "ball_magnet" },
+  "brick_color_p1": { "type": "color_trigger", "hp": 1, "color": "silver", "sets_ball_color": "p1_owned" },
+  "brick_color_p2": { "type": "color_trigger", "hp": 1, "color": "#141414", "sets_ball_color": "p2_owned" }
 }

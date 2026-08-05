@@ -15,20 +15,29 @@ def _resolve_color(value):
 
 
 class BrickCell:
-    __slots__ = ("brick_id", "hp", "max_hp", "color")
+    __slots__ = ("brick_id", "hp", "max_hp", "color", "sets_ball_color")
 
-    def __init__(self, brick_id: str, hp, color):
+    def __init__(self, brick_id: str, hp, color, sets_ball_color=None):
         self.brick_id = brick_id
         self.hp = hp  # None = indestructible, never removed
         self.max_hp = hp  # starting hp, kept to size the damage notch as hp drops
         self.color = color
+        # Optional ball_state name (e.g. "p1_owned") applied to whatever ball
+        # hits this cell — color_trigger bricks per the project brief's
+        # ball-ownership-color mechanic.
+        self.sets_ball_color = sets_ball_color
 
 
 class BrickField:
     """A level's brick grid at runtime: per-cell HP and removal-on-hit.
     Built fresh from level.brick_grid + the catalog each time a level loads."""
 
-    def __init__(self, level, catalog):
+    def __init__(self, level, catalog, vertical_bounds=None):
+        """`vertical_bounds`, if given, is an (top, bottom) pixel range to
+        center the grid within — passed by the caller when a paddle actually
+        occupies the top lane, so the grid sits centered between the two
+        paddles instead of anchored under the fixed top margin. `None` (no
+        top-lane paddle in play) keeps the old fixed, top-anchored layout."""
         grid = level.brick_grid or []
         self.rows = len(grid)
         self.cols = max((len(row) for row in grid), default=0)
@@ -38,7 +47,14 @@ class BrickField:
         grid_width = self.cols * cell_w
         area = constants.BRICK_AREA_RECT
         self._origin_x = area.x + max(0, (area.width - grid_width) // 2)
-        self._origin_y = area.y
+
+        if vertical_bounds is not None:
+            top, bottom = vertical_bounds
+            cell_h = constants.BRICK_HEIGHT + constants.BRICK_GAP
+            grid_height = self.rows * cell_h - constants.BRICK_GAP if self.rows else 0
+            self._origin_y = top + max(0, (bottom - top - grid_height) // 2)
+        else:
+            self._origin_y = area.y
 
     @staticmethod
     def _make_cell(brick_id, catalog):
@@ -47,7 +63,12 @@ class BrickField:
         entry = catalog.entries.get(brick_id)
         if entry is None:
             return BrickCell(brick_id, hp=1, color=constants.FALLBACK_BRICK_COLOR)
-        return BrickCell(brick_id, entry.get("hp"), _resolve_color(entry["color"]))
+        return BrickCell(
+            brick_id,
+            entry.get("hp"),
+            _resolve_color(entry["color"]),
+            sets_ball_color=entry.get("sets_ball_color"),
+        )
 
     def rect_for(self, row: int, col: int) -> pygame.Rect:
         cell_w = constants.BRICK_WIDTH + constants.BRICK_GAP
@@ -138,6 +159,9 @@ class BrickField:
 
             if audio:
                 audio.play_sound("brick_hit")
+
+            if cell.sets_ball_color is not None:
+                ball.set_color_state(cell.sets_ball_color)
 
             if cell.hp is not None:
                 cell.hp -= 1

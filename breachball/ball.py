@@ -56,6 +56,16 @@ class Ball:
         self.vx = vx
         self.vy = vy
 
+    # color_state -> owning player, kept alongside color_state so the two
+    # never drift out of sync (owner is derived, not set independently).
+    _OWNER_BY_COLOR_STATE = {"p1_owned": 1, "p2_owned": 2}
+
+    def set_color_state(self, color_state: str):
+        """Applies a new color_state (e.g. from a color_trigger brick) and
+        updates `owner` to match — neutral/hazard have no owner."""
+        self.color_state = color_state
+        self.owner = self._OWNER_BY_COLOR_STATE.get(color_state)
+
     def _snap_to_paddle(self, paddle):
         rect = paddle.rect
         r = constants.BALL_RADIUS
@@ -64,7 +74,13 @@ class Ball:
 
     def update(self, paddles=(), brick_field=None, audio=None) -> bool:
         """Advances the ball one frame. Returns True if the ball was lost
-        past the bottom paddle (shared-zone rule) this frame."""
+        this frame. Whether an edge is a loss line or just a bounce wall is
+        derived from `paddles` each frame: any lane with a paddle actually
+        defending it this frame is a loss line (missing that paddle means
+        the ball exits the screen behind it); a lane with no paddle in it
+        is just a wall, same as the untouched left/right edges. This makes
+        the top edge behave correctly whether or not a paddle currently
+        occupies the top lane, without needing a separate arena_type flag."""
         if self.attached_paddle is not None:
             self._snap_to_paddle(self.attached_paddle)
             return False
@@ -83,13 +99,40 @@ class Ball:
         if not hit_paddle and brick_field is not None:
             brick_field.resolve_ball_collision(self, prev_x, prev_y, audio=audio)
 
-        if self.y + constants.BALL_RADIUS > constants.VIRTUAL_HEIGHT:
+        lanes_with_paddles = {paddle.lane for paddle in paddles}
+        r = constants.BALL_RADIUS
+        if Lane.BOTTOM in lanes_with_paddles and self.y + r > constants.VIRTUAL_HEIGHT:
+            return True
+        if Lane.TOP in lanes_with_paddles and self.y - r < 0:
             return True
 
-        self._bounce_off_walls(audio=audio)
+        self._bounce_off_walls(
+            audio=audio,
+            bounce_top=Lane.TOP not in lanes_with_paddles,
+            bounce_bottom=Lane.BOTTOM not in lanes_with_paddles,
+        )
         return False
 
+    def _can_be_hit_by(self, paddle) -> bool:
+        """Ball ownership-color enforcement, per the brief: neutral is
+        hittable by either paddle, an owned color only by its matching
+        player, and hazard by neither. A disallowed touch passes straight
+        through with no collision response at all — the paddle simply isn't
+        there as far as that ball is concerned."""
+        if self.color_state == "neutral":
+            return True
+        if self.color_state == "hazard":
+            return False
+        if self.color_state == "p1_owned":
+            return paddle.player == 1
+        if self.color_state == "p2_owned":
+            return paddle.player == 2
+        return True
+
     def _bounce_off_paddle(self, paddle) -> bool:
+        if not self._can_be_hit_by(paddle):
+            return False
+
         rect = paddle.rect
         r = constants.BALL_RADIUS
 
@@ -121,7 +164,13 @@ class Ball:
 
         return True
 
-    def _bounce_off_walls(self, audio=None):
+    def _bounce_off_walls(self, audio=None, bounce_top: bool = True, bounce_bottom: bool = False):
+        """Bounces off the left/right walls unconditionally, and off the
+        top/bottom edges only when told to — update() already returned a
+        lost-ball result before calling this for any edge with a paddle
+        actually defending it this frame, so `bounce_top`/`bounce_bottom`
+        only fire for a lane with no paddle in it (a bare wall, same
+        treatment as the always-on left/right walls)."""
         r = constants.BALL_RADIUS
         bounced = False
         if self.x - r < 0:
@@ -133,13 +182,14 @@ class Ball:
             self.vx = -abs(self.vx)
             bounced = True
 
-        if self.y - r < 0:
+        if bounce_top and self.y - r < 0:
             self.y = r
             self.vy = abs(self.vy)
             bounced = True
-        # Bottom edge (y + r > VIRTUAL_HEIGHT) is handled in update() as a
-        # lost-ball event instead of a bounce — shared-zone rule, since the
-        # top paddle/wall is an obstacle, not a second death line.
+        elif bounce_bottom and self.y + r > constants.VIRTUAL_HEIGHT:
+            self.y = constants.VIRTUAL_HEIGHT - r
+            self.vy = -abs(self.vy)
+            bounced = True
 
         if bounced and audio:
             audio.play_sound("wall_bounce")

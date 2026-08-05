@@ -23,9 +23,16 @@ armored, 3 hits).
   "brick_locked_p1": { "type": "color_locked", "hp": 1, "color_lock_owner": "p1", "color": "silver" },
   "brick_push": { "type": "pushable", "color": "#5DAA6E" },
   "brick_std_cL": { "type": "standard", "hp": 1, "color": "#5DAA6E", "capsule_skill_id": "laser" },
-  "brick_arm_cM": { "type": "armored", "hp": 3, "color": "#8899AA", "capsule_skill_id": "ball_magnet" }
+  "brick_arm_cM": { "type": "armored", "hp": 3, "color": "#8899AA", "capsule_skill_id": "ball_magnet" },
+  "brick_color_p1": { "type": "color_trigger", "hp": 1, "color": "silver", "sets_ball_color": "p1_owned" },
+  "brick_color_p2": { "type": "color_trigger", "hp": 1, "color": "#141414", "sets_ball_color": "p2_owned" }
 }
 ```
+
+`sets_ball_color` is an optional field (mirrors `capsule_skill_id`'s per-entry-flag pattern) naming a
+ball `color_state` (`neutral`, `p1_owned`, `p2_owned`, `hazard`) applied to whichever ball hits that
+brick — a `color_trigger` brick is how ball-ownership colors actually get set during play, enforced
+against paddles per the ball-ownership-color mechanic above.
 
 `capsule_skill_id` is an optional field on any catalog entry (omit or `null` for a brick that
 drops nothing). Rather than tracking capsule drops as a separate list of coordinates, a
@@ -48,7 +55,7 @@ skills (ball-affecting skills like Slow Ball / Piercing Ball would need letters 
 their delivery method is finalized).
 
 **Types (v1 candidate list):** `standard`, `armored`, `regenerating`, `explosive`, `timed_fuse`,
-`moving`, `indestructible`, `color_locked`, `pushable`. Capsule-dropping is a per-instance flag,
+`moving`, `indestructible`, `color_locked`, `pushable`, `color_trigger`. Capsule-dropping is a per-instance flag,
 added when the type is placed in a level (see below), not baked into the catalog entry, since the
 same brick type might drop a capsule in one level and not another.
 

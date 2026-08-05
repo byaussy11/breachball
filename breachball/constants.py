@@ -14,8 +14,15 @@ PADDLE_THICKNESS = 8
 
 # Rect (within the virtual surface) that the brick grid is laid out into.
 # Leaves room above/below for HUD, enemies, and paddle lanes. Grids narrower
-# than this area are centered horizontally within it.
+# than this area are centered horizontally within it. Used as-is (fixed,
+# top-anchored) whenever there's no paddle occupying the top lane; when
+# there is, BrickField instead centers the grid vertically between the two
+# paddles — see BRICK_AREA_VERTICAL_MARGIN.
 BRICK_AREA_RECT = pygame.Rect(16, 40, VIRTUAL_WIDTH - 32, 220)
+
+# Breathing room kept between a paddle's inner edge and the brick grid when
+# vertically centering the grid between a top and bottom paddle.
+BRICK_AREA_VERTICAL_MARGIN = 16
 
 # Brick size is fixed (not stretched to fill the area) so it stays constant
 # regardless of a given level's grid dimensions. A standalone value, not
@@ -47,8 +54,12 @@ BALL_LAUNCH_VY = 3.2
 
 # Mirrors the ball's color_state field from the data schema. p1_owned/
 # p2_owned match the paddle colors they correspond to (silver/onyx black).
+# neutral is deliberately kept out of the white/gray family (warm pale
+# yellow rather than near-white) so it doesn't get lost next to P1's silver
+# — both were light, low-saturation grays and read as the same color at the
+# ball's small on-screen size.
 BALL_COLORS = {
-    "neutral": (240, 240, 240),
+    "neutral": (240, 220, 120),
     "p1_owned": (192, 192, 192),
     "p2_owned": (20, 20, 20),
     "hazard": (200, 40, 40),

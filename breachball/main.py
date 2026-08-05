@@ -39,16 +39,27 @@ def main():
 
     catalog = BrickCatalog.load(DATA_DIR / "bricks_catalog.json")
     level = Level.load(DATA_DIR / "levels" / args.level)
-    brick_field = BrickField(level, catalog)
 
     clock = pygame.time.Clock()
 
     p1 = Paddle(player=1, lane=Lane.BOTTOM)
-    p2 = Paddle(player=2, lane=Lane.BOTTOM, stack_order=1)
-    # p2 sits stacked above p1 (higher stack_order = higher on screen within
-    # the shared bottom lane) — the "top" of the two paddles for serve
-    # purposes, not the arena's separate Lane.TOP.
-    serve_paddle = p2
+    p2 = Paddle(player=2, lane=Lane.TOP)
+    # Bottom paddle serves by default — classic brick-breaker serve feel.
+    serve_paddle = p1
+
+    # With a paddle actually occupying the top lane, center the brick grid
+    # between the two paddles rather than anchoring it under the fixed top
+    # margin (which assumed the top lane was just an obstacle wall, not a
+    # played paddle).
+    top_paddle = next((p for p in (p1, p2) if p.lane == Lane.TOP), None)
+    bottom_paddle = next((p for p in (p1, p2) if p.lane == Lane.BOTTOM), None)
+    vertical_bounds = None
+    if top_paddle is not None and bottom_paddle is not None:
+        vertical_bounds = (
+            top_paddle.rect.bottom + constants.BRICK_AREA_VERTICAL_MARGIN,
+            bottom_paddle.rect.top - constants.BRICK_AREA_VERTICAL_MARGIN,
+        )
+    brick_field = BrickField(level, catalog, vertical_bounds=vertical_bounds)
 
     ball = Ball(x=0, y=0, vx=0, vy=0)
     ball.attach_to_paddle(serve_paddle)
