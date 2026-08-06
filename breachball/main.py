@@ -46,6 +46,11 @@ def main():
     p2 = Paddle(player=2, lane=Lane.RIGHT)
     # Bottom paddle serves by default — classic brick-breaker serve feel.
     serve_paddle = p1
+    # Paddles don't change lanes mid-game yet (that's what corner transfer
+    # tubes will add later), so this is fixed for the whole run — tells
+    # arena which corners actually get a block drawn (and, via `paddles`,
+    # tells the ball which corner blocks are solid this frame).
+    active_lanes = frozenset((p1.lane, p2.lane))
 
     # With a paddle actually occupying the top lane, center the brick grid
     # between the two paddles rather than anchoring it under the fixed top
@@ -111,7 +116,7 @@ def main():
                 audio.play_sound("win")
 
         surface = display.begin_frame()
-        arena.draw(surface)
+        arena.draw(surface, active_lanes)
         brick_field.draw(surface)
         ball.draw(surface)
         p1.draw(surface)

@@ -8,18 +8,8 @@ this only covers a paddle placed on a given lane for the whole game/level.)"""
 
 import pygame
 
-from . import constants
+from . import arena, constants
 from .controls import Lane, lane_axis
-
-# Fixed coordinate (perpendicular to the paddle's travel axis) for each
-# lane — how far in from that lane's screen edge the paddle sits. y for the
-# horizontal bottom/top lanes, x for the vertical left/right lanes.
-_LANE_FIXED_COORD = {
-    Lane.BOTTOM: constants.VIRTUAL_HEIGHT - 20,
-    Lane.TOP: 20,
-    Lane.LEFT: 20,
-    Lane.RIGHT: constants.VIRTUAL_WIDTH - 20,
-}
 
 # Which direction stacking nudges a paddle, per lane — always toward the
 # arena's center, away from that lane's screen edge.
@@ -61,20 +51,9 @@ class Paddle:
     def _travel_range(self) -> float:
         return constants.VIRTUAL_WIDTH if lane_axis(self.lane) == "x" else constants.VIRTUAL_HEIGHT
 
-    def _travel_bounds(self) -> tuple[float, float]:
-        """Min/max for self.pos, inset from both ends of the lane's travel
-        range by CORNER_SIZE — every lane runs between two corners (e.g.
-        BOTTOM spans the bottom-left and bottom-right corners), so both
-        ends get the same corner dead-zone treatment. Keeps this paddle
-        from ever sliding into the reserved corner squares (see arena.py),
-        which is what let two perpendicular paddles cross/overlap before."""
-        low = constants.CORNER_SIZE
-        high = self._travel_range() - constants.CORNER_SIZE - self.length
-        return low, high
-
     @property
     def rect(self) -> pygame.Rect:
-        fixed = _LANE_FIXED_COORD[self.lane] + _STACK_SIGN[self.lane] * self.stack_order * STACK_OFFSET
+        fixed = arena.LANE_FIXED_COORD[self.lane] + _STACK_SIGN[self.lane] * self.stack_order * STACK_OFFSET
         pos = round(self.pos)
         if lane_axis(self.lane) == "x":
             return pygame.Rect(pos, fixed, self.length, self.thickness)
@@ -82,7 +61,7 @@ class Paddle:
 
     def move(self, delta: float):
         self.pos += delta
-        low, high = self._travel_bounds()
+        low, high = arena.travel_bounds(self.lane, self.length)
         self.pos = max(low, min(high, self.pos))
 
     def draw(self, surface: pygame.Surface):

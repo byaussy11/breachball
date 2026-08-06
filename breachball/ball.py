@@ -5,7 +5,7 @@ import math
 
 import pygame
 
-from . import constants
+from . import arena, constants
 from .controls import Lane, lane_axis
 
 # How much of the ball's total speed can go into the horizontal component on
@@ -97,6 +97,8 @@ class Ball:
         self.x += self.vx * self.speed_multiplier
         self.y += self.vy * self.speed_multiplier
 
+        lanes_with_paddles = {paddle.lane for paddle in paddles}
+
         hit_paddle = False
         for paddle in paddles:
             if self._bounce_off_paddle(paddle):
@@ -104,10 +106,12 @@ class Ball:
                 if audio:
                     audio.play_sound("paddle_bounce")
                 break  # resolve at most one collision per frame
-        if not hit_paddle and brick_field is not None:
+        hit_block = False
+        if not hit_paddle:
+            hit_block = self._bounce_off_corner_blocks(lanes_with_paddles, prev_x, prev_y, audio=audio)
+        if not hit_paddle and not hit_block and brick_field is not None:
             brick_field.resolve_ball_collision(self, prev_x, prev_y, audio=audio)
 
-        lanes_with_paddles = {paddle.lane for paddle in paddles}
         r = constants.BALL_RADIUS
         if Lane.BOTTOM in lanes_with_paddles and self.y + r > constants.VIRTUAL_HEIGHT:
             return True
@@ -188,6 +192,45 @@ class Ball:
             self.x = rect.right + r if paddle.lane == Lane.LEFT else rect.left - r
 
         return True
+
+    def _bounce_off_corner_blocks(self, lanes_with_paddles, prev_x: float, prev_y: float, audio=None) -> bool:
+        """Corner blocks (arena.py) are solid — the ball reflects off
+        whichever face it hit rather than passing through. Axis-of-approach
+        logic mirrors BrickField.resolve_ball_collision (same flush,
+        axis-aligned geometry, just a permanent obstacle instead of a
+        destructible one), so a graze off a block's corner still resolves
+        the same way a brick's does."""
+        r = constants.BALL_RADIUS
+        for rect in arena.corner_blocks(lanes_with_paddles):
+            overlap_x = min(self.x + r, rect.right) - max(self.x - r, rect.left)
+            overlap_y = min(self.y + r, rect.bottom) - max(self.y - r, rect.top)
+            if overlap_x <= 0 or overlap_y <= 0:
+                continue
+
+            came_from_left = prev_x + r <= rect.left
+            came_from_right = prev_x - r >= rect.right
+            came_from_above = prev_y + r <= rect.top
+            came_from_below = prev_y - r >= rect.bottom
+
+            if came_from_above or came_from_below:
+                axis = "y"
+            elif came_from_left or came_from_right:
+                axis = "x"
+            else:
+                axis = "x" if overlap_x < overlap_y else "y"
+
+            if axis == "x":
+                self.vx = -self.vx
+                self.x = rect.left - r if (came_from_left or self.x < rect.centerx) else rect.right + r
+            else:
+                self.vy = -self.vy
+                self.y = rect.top - r if (came_from_above or self.y < rect.centery) else rect.bottom + r
+
+            if audio:
+                audio.play_sound("wall_bounce")
+            return True  # resolve at most one block per frame
+
+        return False
 
     def _bounce_off_walls(
         self,
