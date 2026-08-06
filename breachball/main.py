@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pygame
 
-from . import constants
+from . import arena, constants
 from .audio import AudioManager
 from .ball import Ball
 from .bricks import BrickField
@@ -43,7 +43,7 @@ def main():
     clock = pygame.time.Clock()
 
     p1 = Paddle(player=1, lane=Lane.BOTTOM)
-    p2 = Paddle(player=2, lane=Lane.TOP)
+    p2 = Paddle(player=2, lane=Lane.RIGHT)
     # Bottom paddle serves by default — classic brick-breaker serve feel.
     serve_paddle = p1
 
@@ -111,6 +111,7 @@ def main():
                 audio.play_sound("win")
 
         surface = display.begin_frame()
+        arena.draw(surface)
         brick_field.draw(surface)
         ball.draw(surface)
         p1.draw(surface)

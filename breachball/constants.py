@@ -12,6 +12,13 @@ DEFAULT_WINDOW_SIZE = (1280, 960)
 PADDLE_WIDTH = 40
 PADDLE_THICKNESS = 8
 
+# Side length of the dead-zone square reserved at each of the arena's four
+# corners (see arena.py) so two perpendicular paddles (e.g. bottom + right)
+# can't slide far enough to cross or overlap each other. Matches
+# PADDLE_WIDTH so a maxed-out paddle's far edge lands flush with the
+# corner square's edge instead of stopping short or clipping into it.
+CORNER_SIZE = 40
+
 # Rect (within the virtual surface) that the brick grid is laid out into.
 # Leaves room above/below for HUD, enemies, and paddle lanes. Grids narrower
 # than this area are centered horizontally within it. Used as-is (fixed,
