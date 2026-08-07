@@ -1,24 +1,27 @@
 """Static arena structure that isn't owned by any single paddle: where each
 lane sits (shared with paddle.py so paddle placement and corner geometry can
-never drift apart), and the corner blocks that keep a paddle from sliding
-off the end of its lane into a corner with nothing there to stop it.
+never drift apart), and the corner blocks that keep two perpendicular
+paddles from sliding past/overlapping each other at a corner they share.
 
-Any lane with a paddle in play gets a block at *both* of its ends, whether
-or not the perpendicular lane there also has a paddle — a lane's own
-paddle is reason enough to protect that corner, since corner transfer tubes
-(letting a paddle move *between* lanes) will eventually live there too. So
-a corner only goes without a block when *neither* of its two bordering
-lanes has a paddle at all. Each block is sized and positioned to sit flush
-against whichever paddle(s) actually border it: its near edge lines up
-exactly with the paddle's ball-facing edge, so a paddle sliding toward the
-corner meets the block with no gap and no overlap. Blocks are solid — see
+A corner gets a block only when *both* of its bordering lanes actually have
+a paddle in play this run — that's the only situation a block solves
+(stopping two paddles from colliding at the corner). A corner bordered by
+just one paddle-lane has nothing there to collide with, so it's left open
+and that paddle can travel all the way to the true screen edge. (Corner
+transfer tubes will be a second, later reason for a block to exist at a
+corner — see arena_type "l_shaped"/split-zone work in the roadmap — but
+that's still ahead of us; a lone paddle-lane isn't reason enough on its
+own.) Each block that does exist is sized and positioned to sit flush
+against both paddles that border it: its near edges line up exactly with
+each paddle's ball-facing edge, so a paddle sliding toward the corner meets
+the block with no gap and no overlap. Blocks are solid — see
 Ball._bounce_off_corner_blocks in ball.py — so the ball deflects off them
 like any other wall."""
 
 import pygame
 
 from . import constants
-from .controls import Lane
+from .controls import Lane, lane_axis
 
 # Fixed coordinate (perpendicular to the paddle's travel axis) for each
 # lane — how far in from that lane's screen edge the paddle sits. y for the
@@ -82,15 +85,13 @@ def _lane_front_edge(lane: Lane) -> float:
 
 
 def corner_blocks(active_lanes) -> list[pygame.Rect]:
-    """One rect per corner where at least one bordering lane is in
-    `active_lanes`, each sized from that corner's true screen edges in to
-    the bordering lane(s)' front edge(s) — a lane with no paddle still has
-    a well-defined front edge (LANE_FIXED_COORD/PADDLE_LANE_INSET don't
-    depend on whether a paddle actually occupies it), so an unpaired corner
-    still gets a same-size block, just anchored on one lane instead of two."""
+    """One rect per corner where *both* bordering lanes are in
+    `active_lanes` — the only case where a block is actually needed, since
+    it's two paddles that could otherwise collide there. A corner with just
+    one paddle-lane bordering it is left open."""
     rects = []
     for h_lane, v_lane in _CORNER_LANES.values():
-        if h_lane not in active_lanes and v_lane not in active_lanes:
+        if h_lane not in active_lanes or v_lane not in active_lanes:
             continue
         y_edge = _lane_front_edge(h_lane)
         x_edge = _lane_front_edge(v_lane)
@@ -100,14 +101,23 @@ def corner_blocks(active_lanes) -> list[pygame.Rect]:
     return rects
 
 
-def travel_bounds(lane: Lane, length: float) -> tuple[float, float]:
-    """Min/max for a `length`-long paddle's `pos` on `lane`. A paddle's own
-    lane being in play is reason enough for both of its corners to have a
-    block (see module docstring), so both ends always clamp flush against
-    one — this doesn't need to know about any other paddle."""
+def travel_bounds(lane: Lane, length: float, active_lanes) -> tuple[float, float]:
+    """Min/max for a `length`-long paddle's `pos` on `lane`. Each end
+    clamps flush against a block only where one actually exists — i.e.
+    where the neighboring lane at that corner is also in `active_lanes` (so
+    a paddle could otherwise slide into one occupying that lane). An end
+    with no neighbor paddle has no block, so the paddle can travel all the
+    way to the true screen edge there."""
     low_neighbor = _CORNER_NEIGHBOR[(lane, "low")]
     high_neighbor = _CORNER_NEIGHBOR[(lane, "high")]
-    return _lane_front_edge(low_neighbor), _lane_front_edge(high_neighbor) - length
+    axis_max = constants.VIRTUAL_WIDTH if lane_axis(lane) == "x" else constants.VIRTUAL_HEIGHT
+    low = _lane_front_edge(low_neighbor) if low_neighbor in active_lanes else 0.0
+    high = (
+        _lane_front_edge(high_neighbor) - length
+        if high_neighbor in active_lanes
+        else axis_max - length
+    )
+    return low, high
 
 
 def draw(surface: pygame.Surface, active_lanes):

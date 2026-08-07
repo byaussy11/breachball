@@ -52,6 +52,17 @@ def main():
     # tells the ball which corner blocks are solid this frame).
     active_lanes = frozenset((p1.lane, p2.lane))
 
+    # Which of the active lanes can actually lose the ball, per the level's
+    # arena_type. shared_zone: only the bottom paddle guards against loss —
+    # any other paddle lane (P2's, wherever it's placed) is an obstacle/
+    # redirect, same role a bare wall would play if nothing occupied that
+    # lane. split_zone (and anything else): every defended lane loses the
+    # ball, same as today's behavior.
+    if level.arena_type == "shared_zone":
+        death_lanes = active_lanes & {Lane.BOTTOM}
+    else:
+        death_lanes = active_lanes
+
     # With a paddle actually occupying the top lane, center the brick grid
     # between the two paddles rather than anchoring it under the fixed top
     # margin (which assumed the top lane was just an obstacle wall, not a
@@ -99,10 +110,12 @@ def main():
         controls.update()
 
         if game_state == "playing":
-            p1.move(controls.get_lane_movement(1, p1.lane))
-            p2.move(controls.get_lane_movement(2, p2.lane))
+            p1.move(controls.get_lane_movement(1, p1.lane), active_lanes)
+            p2.move(controls.get_lane_movement(2, p2.lane), active_lanes)
 
-            ball_lost = ball.update(paddles=(p1, p2), brick_field=brick_field, audio=audio)
+            ball_lost = ball.update(
+                paddles=(p1, p2), brick_field=brick_field, audio=audio, death_lanes=death_lanes
+            )
             if ball_lost:
                 lives -= 1
                 audio.play_sound("life_lost")

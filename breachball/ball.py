@@ -80,15 +80,19 @@ class Ball:
             self.y = rect.centery
             self.x = rect.right + r if paddle.lane == Lane.LEFT else rect.left - r
 
-    def update(self, paddles=(), brick_field=None, audio=None) -> bool:
+    def update(self, paddles=(), brick_field=None, audio=None, death_lanes=None) -> bool:
         """Advances the ball one frame. Returns True if the ball was lost
-        this frame. Whether an edge is a loss line or just a bounce wall is
-        derived from `paddles` each frame: any lane (bottom/top/left/right)
-        with a paddle actually defending it this frame is a loss line
-        (missing that paddle means the ball exits the screen behind it); a
-        lane with no paddle in it is just a wall. This makes each edge
-        behave correctly based on which lanes are actually in play, without
-        needing a separate arena_type flag."""
+        this frame.
+
+        Whether an edge is a loss line or just a bounce wall is governed by
+        `death_lanes`, not by paddle presence alone — a paddle occupying a
+        lane and that lane being able to lose the ball are separate facts.
+        Shared-zone's top paddle, and eventually a mostly-solid wall with
+        enemy-spawn holes, are both cases of a paddle sitting on a lane that
+        isn't a death line: a miss there just bounces off the wall behind
+        it instead of costing a life. `death_lanes` defaults to every lane
+        with a paddle in it (today's split-zone-equivalent behavior) when
+        the caller doesn't pass one explicitly."""
         if self.attached_paddle is not None:
             self._snap_to_paddle(self.attached_paddle)
             return False
@@ -98,6 +102,11 @@ class Ball:
         self.y += self.vy * self.speed_multiplier
 
         lanes_with_paddles = {paddle.lane for paddle in paddles}
+        # Which lanes can actually lose the ball this frame — see the
+        # docstring above. Kept distinct from lanes_with_paddles, which is
+        # only about paddle/corner-block collision and says nothing about
+        # loss lines.
+        death_lanes = lanes_with_paddles if death_lanes is None else set(death_lanes)
 
         hit_paddle = False
         for paddle in paddles:
@@ -113,21 +122,21 @@ class Ball:
             brick_field.resolve_ball_collision(self, prev_x, prev_y, audio=audio)
 
         r = constants.BALL_RADIUS
-        if Lane.BOTTOM in lanes_with_paddles and self.y + r > constants.VIRTUAL_HEIGHT:
+        if Lane.BOTTOM in death_lanes and self.y + r > constants.VIRTUAL_HEIGHT:
             return True
-        if Lane.TOP in lanes_with_paddles and self.y - r < 0:
+        if Lane.TOP in death_lanes and self.y - r < 0:
             return True
-        if Lane.RIGHT in lanes_with_paddles and self.x + r > constants.VIRTUAL_WIDTH:
+        if Lane.RIGHT in death_lanes and self.x + r > constants.VIRTUAL_WIDTH:
             return True
-        if Lane.LEFT in lanes_with_paddles and self.x - r < 0:
+        if Lane.LEFT in death_lanes and self.x - r < 0:
             return True
 
         self._bounce_off_walls(
             audio=audio,
-            bounce_top=Lane.TOP not in lanes_with_paddles,
-            bounce_bottom=Lane.BOTTOM not in lanes_with_paddles,
-            bounce_left=Lane.LEFT not in lanes_with_paddles,
-            bounce_right=Lane.RIGHT not in lanes_with_paddles,
+            bounce_top=Lane.TOP not in death_lanes,
+            bounce_bottom=Lane.BOTTOM not in death_lanes,
+            bounce_left=Lane.LEFT not in death_lanes,
+            bounce_right=Lane.RIGHT not in death_lanes,
         )
         return False
 
@@ -241,9 +250,11 @@ class Ball:
         bounce_right: bool = True,
     ):
         """Bounces off any edge told to — update() already returned a
-        lost-ball result before calling this for any edge with a paddle
-        actually defending it this frame, so each `bounce_*` flag only
-        fires for a lane with no paddle in it (a bare wall)."""
+        lost-ball result before calling this for any death-line edge, so
+        each `bounce_*` flag fires for a lane that isn't a death line this
+        frame, whether that's because no paddle is there at all (a bare
+        wall) or because a paddle occupies it in a non-death-line role
+        (e.g. shared-zone's top paddle)."""
         r = constants.BALL_RADIUS
         bounced = False
         if bounce_left and self.x - r < 0:

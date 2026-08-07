@@ -59,9 +59,9 @@ class Paddle:
             return pygame.Rect(pos, fixed, self.length, self.thickness)
         return pygame.Rect(fixed, pos, self.thickness, self.length)
 
-    def move(self, delta: float):
+    def move(self, delta: float, active_lanes):
         self.pos += delta
-        low, high = arena.travel_bounds(self.lane, self.length)
+        low, high = arena.travel_bounds(self.lane, self.length, active_lanes)
         self.pos = max(low, min(high, self.pos))
 
     def draw(self, surface: pygame.Surface):
