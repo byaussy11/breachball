@@ -1,21 +1,30 @@
-"""Hand-authored placeholder pixel art, built as small pixel grids in code
-rather than loaded from image files — there's no art-asset pipeline yet (see
+"""Sprite loading, with hand-coded pixel-grid placeholders as a fallback for
+whatever hasn't been drawn yet — there's no full art-asset pipeline yet (see
 the project brief's Art/Visual Pipeline notes). Each build_*_sprite()
-function is the sole seam a real asset swap needs to touch later: callers
-only ever consume the Surface it returns, so replacing the hand-coded pixels
-with `pygame.image.load(...)` (same native size, same orientation
-convention) is a one-function change, not a rewrite of the callers.
+function is the one seam callers touch: they only ever consume the Surface
+it returns, never caring whether that surface came from a loaded file or
+hand-coded pixels, so real art can land file-by-file without any caller
+changes.
 """
+
+from pathlib import Path
 
 import pygame
 
 from . import constants
 
+ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
+
 # Canonical orientation for the paddle sprite: horizontal, PADDLE_WIDTH wide
 # x PADDLE_THICKNESS tall, matching a bottom/top-lane paddle as drawn. A
 # left/right-lane paddle rotates this 90° at draw time (see paddle.py) —
-# only one sprite per player needs to be authored, orientation is handled
-# once, generically, by the caller.
+# only one sprite per player needs to be authored/drawn, orientation is
+# handled once, generically, by the caller.
+_PADDLE_SPRITE_PATHS = {
+    1: ASSETS_DIR / "sprites" / "paddles" / "Silver_Paddle.png",
+    2: ASSETS_DIR / "sprites" / "paddles" / "Onyx_Paddle.png",
+}
+
 _PADDLE_PALETTES = {
     1: {  # silver
         "highlight": (235, 235, 235),
@@ -42,13 +51,49 @@ _paddle_sprite_cache = {}
 
 def build_paddle_sprite(player: int) -> pygame.Surface:
     """Returns the (cached) canonical horizontal paddle sprite for `player`,
-    sized PADDLE_WIDTH x PADDLE_THICKNESS: a beveled bar (highlight row on
-    top, shadow/rim rows on the bottom, darker end caps) with a small center
-    notch marking where a laser-turret attachment will eventually mount."""
+    sized PADDLE_WIDTH x PADDLE_THICKNESS. Loads
+    assets/sprites/paddles/p<player>_paddle.png if it exists; falls back to
+    a hand-coded placeholder bar otherwise, so the game runs fine before
+    real art exists and picks it up automatically the moment a file lands
+    at that path — no code change needed on the art side."""
     cached = _paddle_sprite_cache.get(player)
     if cached is not None:
         return cached
 
+    sprite = _load_paddle_sprite_file(player)
+    if sprite is None:
+        sprite = _build_placeholder_paddle_sprite(player)
+    _paddle_sprite_cache[player] = sprite
+    return sprite
+
+
+def _load_paddle_sprite_file(player: int):
+    """Loads the player's sprite file if present, scaling it to
+    PADDLE_WIDTH x PADDLE_THICKNESS if its native size doesn't already
+    match (nearest-neighbor, consistent with display.py's whole-surface
+    scaling — keeps art crisp instead of blurred). Returns None (letting
+    the caller fall back to the placeholder) if the file is missing or
+    fails to load, rather than crashing the game over missing/bad art."""
+    path = _PADDLE_SPRITE_PATHS[player]
+    if not path.is_file():
+        return None
+    try:
+        image = pygame.image.load(path).convert_alpha()
+    except pygame.error as exc:
+        print(f"sprites: failed to load {path} ({exc}); using placeholder.")
+        return None
+
+    size = (constants.PADDLE_WIDTH, constants.PADDLE_THICKNESS)
+    if image.get_size() != size:
+        print(f"sprites: {path.name} is {image.get_size()}, expected {size} — scaling to fit.")
+        image = pygame.transform.scale(image, size)
+    return image
+
+
+def _build_placeholder_paddle_sprite(player: int) -> pygame.Surface:
+    """Hand-coded fallback: a beveled bar (highlight row on top, shadow/rim
+    rows on the bottom, darker end caps) with a small center notch marking
+    where a laser-turret attachment will eventually mount."""
     palette = _PADDLE_PALETTES[player]
     w, h = constants.PADDLE_WIDTH, constants.PADDLE_THICKNESS
     surface = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -73,5 +118,4 @@ def build_paddle_sprite(player: int) -> pygame.Surface:
     for x in range(mid - 1, mid + 1):
         surface.set_at((x, 1), palette["shadow"])
 
-    _paddle_sprite_cache[player] = surface
     return surface

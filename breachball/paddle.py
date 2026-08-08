@@ -69,6 +69,3 @@ class Paddle:
             # need to special-case left vs. right.
             sprite = pygame.transform.rotate(sprite, 90)
         surface.blit(sprite, rect.topleft)
-        if self.player == 2:
-            # Onyx black is otherwise near-invisible against the background.
-            pygame.draw.rect(surface, (255, 255, 255), rect, width=1)
