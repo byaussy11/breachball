@@ -8,7 +8,7 @@ this only covers a paddle placed on a given lane for the whole game/level.)"""
 
 import pygame
 
-from . import arena, constants
+from . import arena, constants, sprites
 from .controls import Lane, lane_axis
 
 # Which direction stacking nudges a paddle, per lane — always toward the
@@ -24,11 +24,6 @@ _STACK_SIGN = {
 # "one above the other" (or side by side, on a vertical lane) rather than
 # overlapping, same relationship regardless of which lane it is.
 STACK_OFFSET = 16
-
-_PLAYER_COLOR = {
-    1: (192, 192, 192),  # P1 = silver
-    2: (20, 20, 20),      # P2 = onyx black
-}
 
 
 class Paddle:
@@ -66,7 +61,14 @@ class Paddle:
 
     def draw(self, surface: pygame.Surface):
         rect = self.rect
-        pygame.draw.rect(surface, _PLAYER_COLOR[self.player], rect)
+        sprite = sprites.build_paddle_sprite(self.player)
+        if lane_axis(self.lane) != "x":
+            # Side lane: rotate the canonical horizontal sprite 90° to
+            # stand it up vertically. Exact rotation direction doesn't
+            # matter — the bar reads the same either way — so this doesn't
+            # need to special-case left vs. right.
+            sprite = pygame.transform.rotate(sprite, 90)
+        surface.blit(sprite, rect.topleft)
         if self.player == 2:
             # Onyx black is otherwise near-invisible against the background.
             pygame.draw.rect(surface, (255, 255, 255), rect, width=1)
