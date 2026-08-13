@@ -62,10 +62,27 @@ class Paddle:
     def draw(self, surface: pygame.Surface):
         rect = self.rect
         sprite = sprites.build_paddle_sprite(self.player)
+        turret = sprites.build_turret_sprite(self.player)
         if lane_axis(self.lane) != "x":
-            # Side lane: rotate the canonical horizontal sprite 90° to
-            # stand it up vertically. Exact rotation direction doesn't
+            # Side lane: rotate the canonical horizontal sprites 90° to
+            # stand them up vertically. Exact rotation direction doesn't
             # matter — the bar reads the same either way — so this doesn't
             # need to special-case left vs. right.
             sprite = pygame.transform.rotate(sprite, 90)
+            turret = pygame.transform.rotate(turret, 90)
         surface.blit(sprite, rect.topleft)
+
+        # Turret is a separate sprite/blit, not part of the paddle's own
+        # canvas — mounted centered on the paddle, poking out past its
+        # field-facing edge. Reuses _STACK_SIGN, which already encodes
+        # "which way is toward the arena's interior" per lane, so this
+        # doesn't need its own per-lane direction table. Purely decorative
+        # for now (fixed hardware on the chassis); the Laser skill (0.4.0)
+        # will control whether it actually fires, not whether it's drawn.
+        sign = _STACK_SIGN[self.lane]
+        tw, th = turret.get_size()
+        if lane_axis(self.lane) == "x":
+            turret_pos = (rect.left + (rect.width - tw) // 2, rect.top - th if sign < 0 else rect.bottom)
+        else:
+            turret_pos = (rect.left - tw if sign < 0 else rect.right, rect.top + (rect.height - th) // 2)
+        surface.blit(turret, turret_pos)

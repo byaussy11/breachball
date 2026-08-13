@@ -12,6 +12,13 @@ DEFAULT_WINDOW_SIZE = (1280, 960)
 PADDLE_WIDTH = 40
 PADDLE_THICKNESS = 8
 
+# Laser turret attachment, mounted on the paddle's center notch (see
+# sprites.py). Small and separate from PADDLE_WIDTH/THICKNESS on purpose —
+# it's a distinct decorative object layered on the paddle, not a resize of
+# the paddle's own collision-relevant sprite.
+TURRET_WIDTH = 8
+TURRET_HEIGHT = 6
+
 # How far a lane's paddle sits, measured from its ball/interior-facing edge
 # in to the screen edge it's nearest. Same inset for all four lanes, so a
 # paddle's "reach" toward a corner is identical regardless of which lane
