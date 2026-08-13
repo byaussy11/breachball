@@ -186,23 +186,30 @@ it's implemented rather than batching all enemy art at the end, including a deat
 enemy type as each one gets its sprite. Audio opportunity: SFX per enemy
 (grab, zap/stun, deflector clank), enemy defeat sound.
 
-**0.6.0 — Level Data Pipeline & Level Editor:** Full brick-type catalog and `brick_grid` JSON
+**0.6.0 — Environment Art: Background & Walls:** The arena background screen and default wall
+graphics — visible in every single level regardless of arena variant, so this is the milestone
+where the game's base visual identity gets completed, now that paddles, skills, and enemies all
+already have their own art. (Tube/lane-specific wall dressing for the arena variants is separate,
+and stays at 0.8.0 where that system is actually built.)
+
+**0.7.0 — Level Data Pipeline & Level Editor:** Full brick-type catalog and `brick_grid` JSON
 loading (finishing out the remaining v1 brick types — regenerating, timed-fuse, moving, pushable,
 color-locked — alongside what's already implemented), plus a first-pass paint-mode level editor
 built as a dev-mode toggle inside the game itself, reusing the same grid-rendering pipeline. Art
 opportunity: brick sprites per type, a natural moment to tackle since building/using the editor
 means spending a lot of time looking at the grid.
 
-**0.7.0 — Arena Variants & Transfer Tubes:** Split-zone and L-shaped arena variants, corner
+**0.8.0 — Arena Variants & Transfer Tubes:** Split-zone and L-shaped arena variants, corner
 transfer tubes, the per-level `paddle_lanes` configuration and validation rules, the lane-based
 clockwise spinner-direction mapping, and paddle travel-range variants (full-width default vs.
-narrower level-design option). Art opportunity: tube visuals, arena wall/frame dressing. Audio
+narrower level-design option). Art opportunity: tube visuals and lane/variant-specific wall
+dressing (distinct from the base walls/background already covered at 0.6.0). Audio
 opportunity: tube whoosh/transition sound.
 
-**0.8.0 — Solo Mode & Input Polish:** The switch/toggle single-spinner control scheme for 1-player
+**0.9.0 — Solo Mode & Input Polish:** The switch/toggle single-spinner control scheme for 1-player
 mode, and difficulty scaling by player count (e.g. reduced ball/enemy counts for solo).
 
-**0.9.0 — First Boss, Attract Mode & First Full Section:** Boss Concept #1 (breakdown phase,
+**0.10.0 — First Boss, Attract Mode & First Full Section:** Boss Concept #1 (breakdown phase,
 weak-point phase, malfunction trigger, absorb-and-reflect payoff), boss-specific enemies, the
 attract-mode/coin-op shell (insert coin, press start, demo loop, credits), and a complete first
 Section (9 regular levels + boss on the 10th) playable end-to-end. Art opportunity: the boss
