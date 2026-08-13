@@ -80,9 +80,10 @@ class Ball:
             self.y = rect.centery
             self.x = rect.right + r if paddle.lane == Lane.LEFT else rect.left - r
 
-    def update(self, paddles=(), brick_field=None, audio=None, death_lanes=None) -> bool:
-        """Advances the ball one frame. Returns True if the ball was lost
-        this frame.
+    def update(self, paddles=(), brick_field=None, audio=None, death_lanes=None):
+        """Advances the ball one frame. Returns the Lane whose death line
+        the ball crossed this frame (so the caller knows which paddle to
+        play a death animation on), or None if the ball wasn't lost.
 
         Whether an edge is a loss line or just a bounce wall is governed by
         `death_lanes`, not by paddle presence alone — a paddle occupying a
@@ -95,7 +96,7 @@ class Ball:
         the caller doesn't pass one explicitly."""
         if self.attached_paddle is not None:
             self._snap_to_paddle(self.attached_paddle)
-            return False
+            return None
 
         prev_x, prev_y = self.x, self.y
         self.x += self.vx * self.speed_multiplier
@@ -123,13 +124,13 @@ class Ball:
 
         r = constants.BALL_RADIUS
         if Lane.BOTTOM in death_lanes and self.y + r > constants.VIRTUAL_HEIGHT:
-            return True
+            return Lane.BOTTOM
         if Lane.TOP in death_lanes and self.y - r < 0:
-            return True
+            return Lane.TOP
         if Lane.RIGHT in death_lanes and self.x + r > constants.VIRTUAL_WIDTH:
-            return True
+            return Lane.RIGHT
         if Lane.LEFT in death_lanes and self.x - r < 0:
-            return True
+            return Lane.LEFT
 
         self._bounce_off_walls(
             audio=audio,
@@ -138,7 +139,7 @@ class Ball:
             bounce_left=Lane.LEFT not in death_lanes,
             bounce_right=Lane.RIGHT not in death_lanes,
         )
-        return False
+        return None
 
     def _can_be_hit_by(self, paddle) -> bool:
         """Ball ownership-color enforcement, per the brief: neutral is

@@ -43,6 +43,16 @@ class Paddle:
         # of the arena, for when it shares a lane with another paddle.
         self.stack_order = stack_order
 
+        # Death-animation state — see start_death_animation/
+        # update_death_animation/finish_death_animation below. `dying` true
+        # for the whole life-lost pause, covering both the frames actually
+        # playing and the blank hold afterward once they run out.
+        self.dying = False
+        self._death_frames = []
+        self._death_frame_index = 0
+        self._death_frame_elapsed = 0.0
+        self._death_blank_elapsed = 0.0
+
     def _travel_range(self) -> float:
         return constants.VIRTUAL_WIDTH if lane_axis(self.lane) == "x" else constants.VIRTUAL_HEIGHT
 
@@ -61,6 +71,21 @@ class Paddle:
 
     def draw(self, surface: pygame.Surface):
         rect = self.rect
+        if self.dying:
+            if self._death_frame_index >= len(self._death_frames):
+                # Frames exhausted — hold blank/invisible until respawn
+                # clears `dying` (see finish_death_animation).
+                return
+            frame = self._death_frames[self._death_frame_index]
+            if lane_axis(self.lane) != "x":
+                frame = pygame.transform.rotate(frame, 90)
+            fw, fh = frame.get_size()
+            # Death frames are their own (larger) size, not
+            # PADDLE_WIDTH/THICKNESS, so center on the paddle's rect rather
+            # than blitting at its topleft.
+            surface.blit(frame, (rect.centerx - fw // 2, rect.centery - fh // 2))
+            return
+
         sprite = sprites.build_paddle_sprite(self.player)
         if lane_axis(self.lane) != "x":
             # Side lane: rotate the canonical horizontal sprite 90° to
@@ -69,3 +94,47 @@ class Paddle:
             # need to special-case left vs. right.
             sprite = pygame.transform.rotate(sprite, 90)
         surface.blit(sprite, rect.topleft)
+
+    def start_death_animation(self) -> bool:
+        """Begins the life-lost death animation for this paddle's player.
+        Returns True if frames exist and the animation actually started
+        (caller should pause play for it); False if this player has no
+        death art yet, in which case nothing was started and the caller
+        should skip straight to respawn with no pause."""
+        frames = sprites.build_paddle_death_frames(self.player)
+        if not frames:
+            return False
+        self._death_frames = frames
+        self._death_frame_index = 0
+        self._death_frame_elapsed = 0.0
+        self._death_blank_elapsed = 0.0
+        self.dying = True
+        return True
+
+    def update_death_animation(self, dt_ms: float) -> bool:
+        """Advances the death animation by dt_ms. Frames play through
+        once, then the paddle holds blank (draw() shows nothing, per
+        _death_frame_index >= len(_death_frames)) for
+        PADDLE_DEATH_BLANK_HOLD_MS before this returns True — the signal
+        for the caller to actually respawn and call
+        finish_death_animation()."""
+        if self._death_frame_index >= len(self._death_frames):
+            self._death_blank_elapsed += dt_ms
+            return self._death_blank_elapsed >= constants.PADDLE_DEATH_BLANK_HOLD_MS
+
+        self._death_frame_elapsed += dt_ms
+        while self._death_frame_elapsed >= constants.PADDLE_DEATH_FRAME_DURATION_MS:
+            self._death_frame_elapsed -= constants.PADDLE_DEATH_FRAME_DURATION_MS
+            self._death_frame_index += 1
+            if self._death_frame_index >= len(self._death_frames):
+                break
+        return False
+
+    def finish_death_animation(self):
+        """Clears death-animation state so draw() resumes showing the
+        normal paddle sprite. Call once respawn actually happens."""
+        self.dying = False
+        self._death_frames = []
+        self._death_frame_index = 0
+        self._death_frame_elapsed = 0.0
+        self._death_blank_elapsed = 0.0

@@ -48,6 +48,51 @@ _PADDLE_PALETTES = {
 
 _paddle_sprite_cache = {}
 
+# Palette name used in death-frame filenames, matching _PADDLE_SPRITE_PATHS'
+# existing Silver/Onyx naming.
+_DEATH_FRAME_PALETTE_NAMES = {1: "Silver", 2: "Onyx"}
+
+_paddle_death_frames_cache = {}
+
+
+def build_paddle_death_frames(player: int) -> list:
+    """Returns the (cached) ordered list of death-animation frames for
+    `player`, each sized PADDLE_DEATH_FRAME_WIDTH x
+    PADDLE_DEATH_FRAME_HEIGHT. Loads
+    assets/sprites/paddles/<Palette>_Paddle_Death_<n>.png for n = 0, 1, 2,
+    ... stopping at the first missing index.
+
+    Unlike build_paddle_sprite/build_turret_sprite, there's no hand-coded
+    placeholder fallback here — animating an explosion by hand isn't worth
+    it before real art exists. A player with no frame 0 yet just gets an
+    empty list back; paddle.start_death_animation() treats that as "skip
+    the animation, respawn immediately" rather than drawing anything."""
+    cached = _paddle_death_frames_cache.get(player)
+    if cached is not None:
+        return cached
+
+    name = _DEATH_FRAME_PALETTE_NAMES[player]
+    size = (constants.PADDLE_DEATH_FRAME_WIDTH, constants.PADDLE_DEATH_FRAME_HEIGHT)
+    frames = []
+    index = 0
+    while True:
+        path = ASSETS_DIR / "sprites" / "paddles" / f"{name}_Paddle_Death_{index}.png"
+        if not path.is_file():
+            break
+        try:
+            image = pygame.image.load(path).convert_alpha()
+        except pygame.error as exc:
+            print(f"sprites: failed to load {path} ({exc}); stopping death-frame scan.")
+            break
+        if image.get_size() != size:
+            print(f"sprites: {path.name} is {image.get_size()}, expected {size} — scaling to fit.")
+            image = pygame.transform.scale(image, size)
+        frames.append(image)
+        index += 1
+
+    _paddle_death_frames_cache[player] = frames
+    return frames
+
 
 def build_paddle_sprite(player: int) -> pygame.Surface:
     """Returns the (cached) canonical horizontal paddle sprite for `player`,

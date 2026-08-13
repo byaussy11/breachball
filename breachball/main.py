@@ -82,12 +82,20 @@ def main():
 
     font = pygame.font.SysFont(None, 24)
     lives = constants.STARTING_LIVES
-    # "playing" | "won" | "lost" — once not "playing", paddle/ball updates
-    # stop and the matching end-of-round message is shown instead.
+    # "playing" | "respawning" | "won" | "lost". "respawning" is a brief
+    # pause after a life is lost — ball/paddle movement freezes while the
+    # paddle that let the ball past plays its death animation, then normal
+    # play resumes on the next serve. "won"/"lost" stop updates for good
+    # and show the matching end-of-round message instead.
     game_state = "playing"
+    # Which paddle is currently mid-death-animation during "respawning" —
+    # None the rest of the time.
+    dying_paddle = None
 
     running = True
     while running:
+        dt = clock.tick(60)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -113,20 +121,36 @@ def main():
             p1.move(controls.get_lane_movement(1, p1.lane), active_lanes)
             p2.move(controls.get_lane_movement(2, p2.lane), active_lanes)
 
-            ball_lost = ball.update(
+            lost_lane = ball.update(
                 paddles=(p1, p2), brick_field=brick_field, audio=audio, death_lanes=death_lanes
             )
-            if ball_lost:
+            if lost_lane is not None:
                 lives -= 1
                 audio.play_sound("life_lost")
                 if lives <= 0:
                     game_state = "lost"
                     audio.play_sound("game_over")
                 else:
-                    ball.attach_to_paddle(serve_paddle)
+                    losing_paddle = next((p for p in (p1, p2) if p.lane == lost_lane), None)
+                    if losing_paddle is not None and losing_paddle.start_death_animation():
+                        dying_paddle = losing_paddle
+                        game_state = "respawning"
+                    else:
+                        # No death art for this player yet — skip the pause
+                        # and respawn immediately, same as before this
+                        # animation existed.
+                        ball.attach_to_paddle(serve_paddle)
             elif brick_field.is_cleared():
                 game_state = "won"
                 audio.play_sound("win")
+        elif game_state == "respawning":
+            # Ball/paddle movement frozen for the whole pause — only the
+            # dying paddle's animation timer advances.
+            if dying_paddle.update_death_animation(dt):
+                dying_paddle.finish_death_animation()
+                dying_paddle = None
+                ball.attach_to_paddle(serve_paddle)
+                game_state = "playing"
 
         surface = display.begin_frame()
         arena.draw(surface, active_lanes)
@@ -137,7 +161,7 @@ def main():
 
         lives_surface = font.render(f"Lives: {lives}", True, (240, 240, 240))
         surface.blit(lives_surface, (8, 8))
-        if game_state != "playing":
+        if game_state in ("won", "lost"):
             message, color = (
                 ("YOU WIN", (80, 220, 100))
                 if game_state == "won"
@@ -150,7 +174,6 @@ def main():
             surface.blit(end_surface, rect)
 
         display.present()
-        clock.tick(60)
 
     pygame.quit()
     sys.exit()

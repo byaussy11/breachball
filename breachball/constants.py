@@ -12,6 +12,21 @@ DEFAULT_WINDOW_SIZE = (1280, 960)
 PADDLE_WIDTH = 40
 PADDLE_THICKNESS = 8
 
+# Life-lost death animation, played once on the paddle that let the ball
+# past before it respawns. Deliberately its own size rather than
+# PADDLE_WIDTH/THICKNESS — an explosion/burst effect reads better bigger
+# than the thin paddle bar, same reasoning that gave the turret its own
+# constants — sized to match the source art (see sprites.py). Frame
+# duration is played slower than the authored GIF's native 100ms/frame, by
+# feel — reads better lingering than at the GIF's original quick-burst
+# pace. After the frames finish, the paddle holds blank for
+# PADDLE_DEATH_BLANK_HOLD_MS before respawn — a beat of "gone" before the
+# paddle comes back, not just a stack of frames.
+PADDLE_DEATH_FRAME_WIDTH = 50
+PADDLE_DEATH_FRAME_HEIGHT = 20
+PADDLE_DEATH_FRAME_DURATION_MS = 200
+PADDLE_DEATH_BLANK_HOLD_MS = 1000
+
 # How far a lane's paddle sits, measured from its ball/interior-facing edge
 # in to the screen edge it's nearest. Same inset for all four lanes, so a
 # paddle's "reach" toward a corner is identical regardless of which lane
