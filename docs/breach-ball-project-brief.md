@@ -112,6 +112,14 @@ A multi-phase fight that cycles through most of the game's core systems in one e
 - **Ball-grabber:** Grabs hold of the ball and tries to carry it out the bottom of the screen; can be knocked away by a paddle's slam attack (see Innate Abilities above). Counts as an enemy that must be cleared to win the level, per the win condition.
 - **Lightning jellyfish** *(working name candidates: `W1R3`, `5T1NG`, or `J3LLYF15H`/`J3L1YF15H` — a knowing nickname, since the crew calls it "jellyfish" for how it looks despite it being a wired drone)* — Visually a drone with a bundle of live, wriggling hot wires trailing from its underside (reads as jellyfish tentacles, but makes diegetic sense as exposed wiring/current rather than an actual creature). Floats around, periodically shoots paddle-colored lightning bolts. If the same-colored paddle is hit, that paddle is stunned for a few seconds. Deliberately color-coded (not neutral) so it creates teamwork moments — e.g. one player takes the stun on purpose so the other is free to handle the ball.
 - **Shielded deflector:** Descends from the top with a small shield beneath it, deflecting the ball as it moves downward — making it harder to keep the ball up and harder to hit bricks while it's in play. The shield only protects against direct/frontal (downward) hits; it can be damaged by a ball connecting from above (e.g. on a return path, hitting its unshielded top) or by a paddle's slam attack side-swiping it as it tries to pass by. If it passes the player and exits off the bottom, it reappears at the top or a side to descend again, looping rather than being a one-time threat. Some versions may be fully indestructible (a harder, permanent-hazard variant) rather than the standard destructible one. Per the win condition, the standard destructible version must be cleared like any other enemy; the indestructible variant is presumably excluded (not meant to be cleared), consistent with permanent-hazard bricks.
+- **Diving drone (working name pending theme naming pass):** A paddle-attacking enemy with four phases:
+  1. **Track/hover** — flies to a position above a paddle and hovers there, adjusting horizontally to follow the paddle's movement. Bobs slightly up and down while hovering to read as a floating disc. No damage/collision with the paddle during this phase.
+  2. **Telegraph** — commits to attack by completing one full circle; stops tracking the paddle the instant this begins, so the attack targets where the circle happened, not the paddle's current position. Does **not** touch or damage either paddle during the telegraph — it's a pure visual warning, not a hazard.
+  3. **Dive** — drops straight down along the circle's position. Has a visible spike/pointed hazard on its underside so contact clearly reads as lethal.
+  4. **Recovery** — glides slowly back upward to attempt again. This is the vulnerability window for the paddle's innate slam attack. A paddle positioned in its ascent path physically blocks it (can't pass through), stalling it in place — this can be used to either slam it immediately, or hold it there while the other paddle repositions to help.
+  - **Loops indefinitely** if not destroyed — a persistent, escalating threat rather than a limited-attempt one, so it needs to be dealt with promptly.
+  - Open: does it take one slam hit to destroy, or multiple?
+  - Open: how this enemy's dive/telegraph geometry adapts when targeting a paddle on the top or side (left/right) lanes rather than the default bottom — "dive straight down" doesn't translate directly to those orientations.
 
 ---
 
@@ -160,6 +168,8 @@ over/win stings.
 already prototyped earlier in design (base paddle plus the laser turret attachment), palette-swapped
 to the official colors — silver for Player 1, onyx black for Player 2. Low-risk, high-payoff step
 since the groundwork already exists; no reason to wait for the rest of the art to do this one.
+Also a good point to add a paddle "life lost" death animation/sequence, now that the base paddle
+sprite exists to animate.
 
 **0.4.0 — Paddle Skills & Capsule System:** Capsule drop/catch mechanics, the tiered skills (Grow
 3 tiers, Laser 3 tiers, Ball Magnet 3 tiers, Sticky 3 tiers including the trajectory-preview and
@@ -172,7 +182,8 @@ sticky catch/release), ball duplication charge/complete.
 **0.5.0 — Enemies:** Ball-grabber, lightning jellyfish (wired-drone visual concept), and shielded
 deflector (both destructible and indestructible variants), plus the spawn system. Extends the win
 condition to also require clearing enemies, not just bricks. Art opportunity: sprite each enemy as
-it's implemented rather than batching all enemy art at the end. Audio opportunity: SFX per enemy
+it's implemented rather than batching all enemy art at the end, including a death animation per
+enemy type as each one gets its sprite. Audio opportunity: SFX per enemy
 (grab, zap/stun, deflector clank), enemy defeat sound.
 
 **0.6.0 — Level Data Pipeline & Level Editor:** Full brick-type catalog and `brick_grid` JSON
@@ -196,7 +207,8 @@ weak-point phase, malfunction trigger, absorb-and-reflect payoff), boss-specific
 attract-mode/coin-op shell (insert coin, press start, demo loop, credits), and a complete first
 Section (9 regular levels + boss on the 10th) playable end-to-end. Art opportunity: the boss
 sprite and attract-mode screens — saved for last since the boss design was the most recently
-finalized of the major systems. Audio opportunity: this is where music really lands — attract-mode
+finalized of the major systems — plus a boss death sequence, likely the most elaborate animation
+in the game given the fight's multi-phase structure, and a natural capstone moment. Audio opportunity: this is where music really lands — attract-mode
 theme, boss music, and optionally a Section theme, since it's the first point with a complete,
 playable loop worth scoring. Also boss-specific SFX (malfunction stutter/spark, absorb/reflect).
 
